@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>FotoRastro — Investigación OSINT de fotos</title>
+<title>FotoRastro — Investigación OSINT de fotos (100% gratis)</title>
 <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css">
 <style>
 :root{
@@ -72,6 +72,8 @@ textarea#report{width:100%;min-height:260px;background:#080b12;color:#c9d4e8;bor
 footer{text-align:center;color:var(--dim);font-size:12px;padding:26px;border-top:1px solid var(--line);margin-top:10px}
 .hidden{display:none!important}
 .pill{font-size:11px;padding:2px 10px;border-radius:12px;background:#1a2233;border:1px solid var(--line);color:var(--dim)}
+.pill.free{background:#052e16;border-color:#14532d;color:#bbf7d0;font-weight:700}
+.freebar{display:flex;gap:8px;flex-wrap:wrap;margin-top:10px}
 </style>
 </head>
 <body>
@@ -79,14 +81,18 @@ footer{text-align:center;color:var(--dim);font-size:12px;padding:26px;border-top
   <div class="logo"><svg viewBox="0 0 24 24" fill="none" stroke-width="2.4"><circle cx="11" cy="11" r="7"/><path d="M21 21l-4.3-4.3"/></svg></div>
   <div><h1>Foto<span>Rastro</span></h1><div class="sub">Investigación OSINT todo-en-uno a partir de una foto</div></div>
   <div class="spacer"></div>
-  <button id="btnKeys">Configurar APIs</button>
+  <span class="pill free">100% GRATIS · SIN CLAVES</span>
+  <button id="btnAdv">Opciones avanzadas</button>
 </header>
 <main>
   <div class="card" id="dropCard">
     <div id="drop">
       <svg width="44" height="44" viewBox="0 0 24 24" fill="none" stroke="#4ade80" stroke-width="1.6"><rect x="3" y="3" width="18" height="18" rx="3"/><circle cx="8.5" cy="8.5" r="1.5"/><path d="M21 15l-5-5L5 21"/></svg>
       <p><b style="color:#dbe3f0">Arrastra una foto aquí</b> o haz clic para elegirla</p>
-      <p style="font-size:12px">Todo se procesa en tu navegador. Las APIs solo reciben la imagen cuando ejecutas cada módulo.</p>
+      <p style="font-size:12px">Sin registro y sin claves: el OCR y la detección de objetos corren en tu navegador, la IA analista y el mapa usan servicios gratuitos.</p>
+      <div class="freebar" style="justify-content:center">
+        <span class="pill">EXIF local</span><span class="pill">OCR local</span><span class="pill">Objetos local</span><span class="pill">IA gratis</span><span class="pill">Mapa gratis</span>
+      </div>
       <input type="file" id="fileInput" accept="image/*" class="hidden">
     </div>
     <div id="preview">
@@ -108,7 +114,7 @@ footer{text-align:center;color:var(--dim);font-size:12px;padding:26px;border-top
   <div class="grid2">
     <div class="card hidden" id="verdictCard">
       <h2><span class="dot" id="verdictDot"></span> Veredicto del analista IA</h2>
-      <div id="verdictBody"><p class="sub">Se genera al correr la investigación con API de Gemini configurada.</p></div>
+      <div id="verdictBody"><p class="sub">Se genera automáticamente al correr la investigación. Sin configurar nada.</p></div>
     </div>
     <div class="card hidden" id="mapCard">
       <h2><span class="dot" id="mapDot"></span> Ubicaciones candidatas</h2>
@@ -122,16 +128,16 @@ footer{text-align:center;color:var(--dim);font-size:12px;padding:26px;border-top
       <h2><span class="dot" id="exifDot"></span> Metadatos EXIF</h2>
       <dl class="kv mono" id="exifBody"></dl>
     </div>
-    <div class="card hidden" id="visionCard">
-      <h2><span class="dot" id="visionDot"></span> Google Vision</h2>
-      <div id="visionBody"></div>
+    <div class="card hidden" id="contentCard">
+      <h2><span class="dot" id="contentDot"></span> Contenido de la imagen</h2>
+      <div id="contentBody"></div>
     </div>
   </div>
 
   <div class="card hidden" id="clueCard">
     <h2><span class="dot" id="clueDot"></span> Pistas reunidas</h2>
     <div id="clueBody"></div>
-    <h2 style="margin-top:16px">Búsqueda inversa manual</h2>
+    <h2 style="margin-top:16px">Búsqueda inversa manual <span class="pill free">gratis</span></h2>
     <p class="sub" style="margin-bottom:8px">Abre la foto en estos motores (arrástrala a la página que se abre):</p>
     <div class="extlinks">
       <button data-ext="https://lens.google.com/">Google Lens</button>
@@ -153,22 +159,26 @@ footer{text-align:center;color:var(--dim);font-size:12px;padding:26px;border-top
 
 <div class="modal" id="keysModal">
   <div class="mbox">
-    <h3>Claves de API <span class="pill">se guardan solo en tu navegador</span></h3>
-    <div class="field"><label>Google Cloud Vision — API key</label>
+    <h3>Opciones avanzadas <span class="pill">todo opcional</span></h3>
+    <p class="sub" style="margin-bottom:14px">La app funciona al 100% sin configurar nada. Estas claves solo <b>mejoran</b> resultados puntuales. Se guardan solo en tu navegador.</p>
+    <div class="field"><label>Google Cloud Vision — API key (opcional)</label>
       <input id="k_vision" type="password" placeholder="AIza...">
-      <div class="hint">Google Cloud Console → APIs → Cloud Vision API → Credenciales. 1,000 análisis gratis/mes.</div></div>
-    <div class="field"><label>Gemini — API key</label>
+      <div class="hint">Añade detección de monumentos, logos y coincidencias web. 1,000 análisis gratis/mes (pide cuenta de facturación).</div></div>
+    <div class="field"><label>Gemini — API key (opcional)</label>
       <input id="k_gemini" type="password" placeholder="AIza...">
-      <div class="hint">Gratis en Google AI Studio (aistudio.google.com). Alimenta al analista IA.</div></div>
+      <div class="hint">Reemplaza al analista IA gratuito por Gemini. Gratis en Google AI Studio.</div></div>
     <div class="field"><label>Gemini — modelo</label>
       <input id="k_model" type="text" value="gemini-2.0-flash">
       <div class="hint">Cámbialo si Google renombra el modelo.</div></div>
     <div class="field"><label>Bing Visual Search — clave (opcional)</label>
       <input id="k_bing" type="password" placeholder="Ocp-Apim-Subscription-Key">
-      <div class="hint">Azure Portal → Bing Search v7. 1,000 llamadas gratis/mes. Búsqueda inversa por API.</div></div>
-    <div class="field"><label>Endpoint personalizado — URL (opcional, ej. Picarta)</label>
+      <div class="hint">Búsqueda inversa por API. Azure Portal, 1,000 llamadas gratis/mes.</div></div>
+    <div class="field"><label>OCR.space — API key (opcional)</label>
+      <input id="k_ocrspace" type="password" placeholder="helloworld">
+      <div class="hint">OCR en la nube en vez del local. 25,000 gratis/mes en ocr.space/ocrapi/freekey (sin tarjeta).</div></div>
+    <div class="field"><label>Endpoint personalizado — URL (opcional)</label>
       <input id="k_custom_url" type="text" placeholder="https://...">
-      <div class="hint">POST con JSON {"image":"data:image/jpeg;base64,..."}. Copia el endpoint de tu panel de Picarta u otro servicio.</div></div>
+      <div class="hint">POST con JSON {"image":"data:image/jpeg;base64,..."}. Para Picarta u otro servicio.</div></div>
     <div class="field"><label>Endpoint personalizado — cabecera de auth</label>
       <input id="k_custom_h" type="text" placeholder="Authorization: Bearer TU_CLAVE">
       <div class="hint">Formato "Nombre: valor". Se envía tal cual.</div></div>
@@ -179,7 +189,7 @@ footer{text-align:center;color:var(--dim);font-size:12px;padding:26px;border-top
   </div>
 </div>
 
-<footer>FotoRastro · Úsalo solo con fotos propias o con derecho a analizar · Ninguna herramienta garantiza la ubicación exacta: verifica siempre con varias fuentes.</footer>
+<footer>FotoRastro · 100% gratis, sin registro ni claves · Úsalo solo con fotos propias o con derecho a analizar · Ninguna herramienta garantiza la ubicación exacta: verifica siempre con varias fuentes.</footer>
 
 <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/exifr@7/dist/full.umd.js"></script>
@@ -187,7 +197,8 @@ footer{text-align:center;color:var(--dim);font-size:12px;padding:26px;border-top
 <script>
 /* ============ ESTADO ============ */
 const S = { file:null, dataUrl:"", base64:"", w:0, h:0, bytes:0, sha256:"",
-  exif:null, gps:null, vision:null, gemini:null, bing:null, custom:null, candidates:[] };
+  exif:null, gps:null, ocr:"", objects:[], vision:null, ai:null, puter:null, ollama:null,
+  bing:null, custom:null, candidates:[] };
 const $ = id => document.getElementById(id);
 const esc = s => String(s??"").replace(/[&<>"]/g, c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]));
 
@@ -195,17 +206,48 @@ function getKeys(){
   try{ return JSON.parse(localStorage.getItem("fotorastro_keys")||"{}"); }catch{ return {}; }
 }
 function saveKeys(k){ localStorage.setItem("fotorastro_keys", JSON.stringify(k)); }
-function loadKeysUI(){ const k=getKeys(); ["vision","gemini","model","bing","custom_url","custom_h"].forEach(f=>{ $("k_"+f).value=k[f]||($("k_"+f).value||""); }); }
+function loadKeysUI(){ const k=getKeys(); ["vision","gemini","model","bing","ocrspace","custom_url","custom_h"].forEach(f=>{ const el=$("k_"+f); if(el) el.value=k[f]||el.value||""; }); }
+
+/* ============ HELPERS ============ */
+function loadScript(src){
+  return new Promise((res,rej)=>{
+    if(document.querySelector('script[src="'+src+'"]')) return res();
+    const s=document.createElement("script"); s.src=src;
+    s.onload=()=>res(); s.onerror=()=>rej(new Error("No se pudo cargar la librería"));
+    document.head.appendChild(s);
+  });
+}
+function loadImage(src){ return new Promise((res,rej)=>{ const i=new Image(); i.onload=()=>res(i); i.onerror=rej; i.src=src; }); }
+async function downscale(dataUrl,maxDim,quality){
+  const img=await loadImage(dataUrl);
+  const sc=Math.min(1,maxDim/Math.max(img.width,img.height));
+  const c=document.createElement("canvas");
+  c.width=Math.max(1,Math.round(img.width*sc)); c.height=Math.max(1,Math.round(img.height*sc));
+  c.getContext("2d").drawImage(img,0,0,c.width,c.height);
+  return c.toDataURL("image/jpeg",quality||0.85);
+}
+function parseAIJson(txt){
+  const clean=String(txt||"").replace(/```json?|```/g,"").trim();
+  const m=clean.match(/\{[\s\S]*\}/);
+  return JSON.parse(m?m[0]:clean);
+}
+function addCandidate(lat,lng,label,source,conf){
+  if(!isFinite(lat)||!isFinite(lng)||Math.abs(lat)>90||Math.abs(lng)>180) return;
+  if(S.candidates.some(c=>Math.abs(c.lat-lat)<0.001&&Math.abs(c.lng-lng)<0.001)) return;
+  S.candidates.push({lat,lng,label,source,conf});
+}
 
 /* ============ PIPELINE UI ============ */
 const STEPS = [
-  ["exif","Metadatos EXIF","GPS, cámara, fecha y hora de la toma"],
-  ["forense","Huella forense","SHA-256, dimensiones y peso del archivo"],
-  ["vision","Google Vision","Monumentos, logos, texto (OCR) y coincidencias web"],
-  ["bing","Bing Visual Search","Búsqueda inversa de imágenes por API"],
-  ["custom","Endpoint personalizado","IA de geolocalización externa (ej. Picarta)"],
-  ["gemini","Analista IA (Gemini)","Cruza todas las pistas y emite un veredicto"],
-  ["mapa","Mapa de candidatos","Ubica cada pista con coordenadas en el mapa"],
+  ["exif","Metadatos EXIF","GPS, cámara y fecha — 100% local"],
+  ["forense","Huella forense","SHA-256 y dimensiones — 100% local"],
+  ["ocr","Texto en la foto (OCR)","Tesseract.js en tu navegador, gratis e ilimitado"],
+  ["objetos","Objetos detectados","IA local (COCO-SSD) en tu navegador"],
+  ["reversa","Búsqueda inversa","Botones manuales gratis (+API si configuras clave)"],
+  ["ia","Analista IA","Gratis sin clave (Pollinations.ai) o Gemini si lo configuras"],
+  ["visual","Analista visual extra","Puter.js / Ollama local — solo si están disponibles"],
+  ["geo","Geocodificar lugares","Nominatim (OpenStreetMap), gratis sin clave"],
+  ["mapa","Mapa y reporte","Candidatos ubicados + reporte descargable"],
 ];
 function renderSteps(){
   $("steps").innerHTML = STEPS.map(([id,t,d])=>
@@ -216,11 +258,12 @@ function setStep(id, state, extra){
   el.classList.remove("run","done","fail");
   if(state) el.classList.add(state);
   el.querySelector(".st").textContent = state==="done"?"✓":state==="fail"?"!":state==="run"?"…":"·";
-  if(extra) el.querySelector("small").textContent = extra;
+  if(extra!==undefined) el.querySelector("small").textContent = extra;
 }
-function dot(id, cls){ const d=$(id); d.className="dot "+cls; }
+function dot(id, cls){ const d=$(id); if(d) d.className="dot "+cls; }
 function show(id){ $(id).classList.remove("hidden"); }
-
+</script>
+<script>
 /* ============ ARCHIVO ============ */
 const drop=$("drop"), fi=$("fileInput");
 drop.onclick=()=>fi.click();
@@ -231,19 +274,17 @@ fi.onchange=()=>{ if(fi.files[0]) loadFile(fi.files[0]); };
 
 async function loadFile(f){
   if(!f.type.startsWith("image/")){ alert("Elige un archivo de imagen."); return; }
-  S.file=f; S.candidates=[]; S.exif=S.vision=S.gemini=S.bing=S.custom=null;
+  S.file=f; S.candidates=[]; S.ocr=""; S.objects=[];
+  S.exif=S.vision=S.ai=S.puter=S.ollama=S.bing=S.custom=null;
   S.bytes=f.size;
   const buf=await f.arrayBuffer();
   const bytes=new Uint8Array(buf);
-  // dimensiones
   const bmp=await createImageBitmap(new Blob([buf]));
   S.w=bmp.width; S.h=bmp.height; bmp.close();
-  // base64
   let bin=""; const CH=0x8000;
   for(let i=0;i<bytes.length;i+=CH) bin+=String.fromCharCode.apply(null,bytes.subarray(i,i+CH));
   S.base64=btoa(bin);
   S.dataUrl=`data:${f.type};base64,${S.base64}`;
-  // sha256
   const h=await crypto.subtle.digest("SHA-256",buf);
   S.sha256=[...new Uint8Array(h)].map(b=>b.toString(16).padStart(2,"0")).join("");
   $("imgPrev").src=S.dataUrl;
@@ -253,14 +294,108 @@ async function loadFile(f){
     `<span>Dimensiones</span><b>${S.w} × ${S.h} px</b>`+
     `<span>SHA-256</span><b style="font-size:11px">${S.sha256.slice(0,32)}…</b>`;
   $("drop").style.display="none"; $("preview").style.display="flex";
-  ["pipeCard","verdictCard","mapCard","exifCard","visionCard","clueCard","reportCard"].forEach(id=>$(id).classList.add("hidden"));
+  ["pipeCard","verdictCard","mapCard","exifCard","contentCard","clueCard","reportCard"].forEach(id=>$(id).classList.add("hidden"));
 }
 $("btnReset").onclick=()=>{ fi.value=""; $("drop").style.display="block"; $("preview").style.display="none"; };
 
+/* ============ PISTAS ============ */
+function buildClues(){
+  const c=[];
+  if(S.gps) c.push(`GPS EXIF: ${S.gps.latitude}, ${S.gps.longitude}`);
+  if(S.exif){ const d=S.exif.DateTimeOriginal||S.exif.CreateDate; if(d) c.push("Fecha de toma: "+d);
+    if(S.exif.Make||S.exif.Model) c.push(`Cámara: ${S.exif.Make||""} ${S.exif.Model||""}`.trim()); }
+  if(S.ocr) c.push("Texto visible en la foto (OCR): "+S.ocr.slice(0,400).replace(/\s+/g," "));
+  if(S.objects.length) c.push("Objetos detectados: "+S.objects.map(o=>o.clase).join(", "));
+  if(S.vision){
+    (S.vision.landmarkAnnotations||[]).forEach(l=>c.push("Monumento: "+l.description));
+    (S.vision.logoAnnotations||[]).forEach(l=>c.push("Logo: "+l.description));
+    ((S.vision.webDetection||{}).webEntities||[]).slice(0,5).forEach(e=>{ if(e.description) c.push("Entidad web: "+e.description); });
+  }
+  return c.join(" | ")||"sin pistas de metadatos ni contenido";
+}
+const AI_SCHEMA=`{"pais":"","ciudad":"","lugar":"","confianza":0-100,"lat":null,"lng":null,"razonamiento":"una frase","pistas_clave":["..."],"nombres_lugar":["hasta 3 nombres de lugares o marcas visibles para geocodificar"],"advertencia":""}`;
+
+/* ============ ANALISTA IA GRATIS (Pollinations.ai) ============ */
+async function pollinationsAnalyze(clues){
+  const prompt=`Eres un analista forense OSINT. Con estas pistas de una foto, estima dónde fue tomada.\nPistas: ${clues}\nResponde SOLO este JSON (sin markdown ni explicaciones): ${AI_SCHEMA}\nSi no hay pistas suficientes, confianza baja y lat/lng null. No inventes.`;
+  const ctl=new AbortController(); const to=setTimeout(()=>ctl.abort(),120000);
+  try{
+    const r=await fetch("https://text.pollinations.ai/",{method:"POST",signal:ctl.signal,
+      headers:{"Content-Type":"application/json"},
+      body:JSON.stringify({messages:[{role:"user",content:prompt}],model:"openai",private:true})});
+    if(!r.ok) throw new Error("IA no disponible (HTTP "+r.status+")");
+    return parseAIJson(await r.text());
+  } finally { clearTimeout(to); }
+}
+
+/* ============ GEMINI (opcional, con clave) ============ */
+async function geminiAnalyze(K,clues){
+  const prompt=`Eres un analista forense OSINT. Con las pistas de esta foto, determina dónde fue tomada.\nPistas: ${clues}\nResponde SOLO JSON válido: ${AI_SCHEMA}\nSi no puedes determinar el lugar, confianza baja y lat/lng null. Sé honesto, no inventes.`;
+  const model=K.model||"gemini-2.0-flash";
+  const r=await fetch(`https://generativelanguage.googleapis.com/v1beta/models/${encodeURIComponent(model)}:generateContent?key=${encodeURIComponent(K.gemini)}`,{
+    method:"POST",headers:{"Content-Type":"application/json"},
+    body:JSON.stringify({contents:[{parts:[{text:prompt},{inline_data:{mime_type:S.file.type,data:S.base64}}]}]}),
+      generationConfig:{response_mime_type:"application/json",temperature:0.2}});
+  const j=await r.json();
+  if(j.error) throw new Error(j.error.message);
+  const txt=j.candidates?.[0]?.content?.parts?.[0]?.text||"{}";
+  return parseAIJson(txt);
+}
+
+/* ============ ANALISTA VISUAL EXTRA: Puter.js (opcional) ============ */
+function extractPuterText(resp){
+  if(!resp) return "";
+  if(typeof resp==="string") return resp;
+  if(resp.message&&resp.message.content){
+    const c=resp.message.content;
+    if(typeof c==="string") return c;
+    if(Array.isArray(c)) return c.map(x=>x.text||"").join(" ");
+  }
+  if(typeof resp.text==="string") return resp.text;
+  return "";
+}
+async function puterAnalyze(){
+  await loadScript("https://js.puter.com/v2/");
+  const small=await downscale(S.dataUrl,1024,0.85);
+  const vprompt=`Analiza esta foto como investigador forense OSINT y determina dónde fue tomada (país, ciudad, lugar). Responde SOLO este JSON, sin markdown: ${AI_SCHEMA}`;
+  const ctl=new AbortController(); const to=setTimeout(()=>ctl.abort(),90000);
+  try{
+    const resp=await puter.ai.chat(vprompt,small,{stream:false});
+    return parseAIJson(extractPuterText(resp));
+  } finally { clearTimeout(to); }
+}
+
+/* ============ OLLAMA LOCAL (opcional, autodetectado) ============ */
+async function detectOllama(){
+  const ctl=new AbortController(); const to=setTimeout(()=>ctl.abort(),2500);
+  try{
+    const r=await fetch("http://localhost:11434/api/tags",{signal:ctl.signal});
+    clearTimeout(to);
+    if(!r.ok) return null;
+    const j=await r.json();
+    return (j.models||[]).map(m=>m.name);
+  }catch{ clearTimeout(to); return null; }
+}
+async function ollamaAnalyze(model){
+  const b64=(await downscale(S.dataUrl,1024,0.85)).split(",")[1];
+  const ctl=new AbortController(); const to=setTimeout(()=>ctl.abort(),120000);
+  try{
+    const r=await fetch("http://localhost:11434/api/chat",{method:"POST",signal:ctl.signal,
+      headers:{"Content-Type":"application/json"},
+      body:JSON.stringify({model,stream:false,messages:[{role:"user",
+        content:`Analiza esta foto como investigador forense OSINT. ¿En qué país/ciudad/lugar fue tomada? Responde SOLO este JSON, sin markdown: ${AI_SCHEMA}`,
+        images:[b64]}]})});
+    if(!r.ok) throw new Error("Ollama HTTP "+r.status);
+    const j=await r.json();
+    return parseAIJson(j.message&&j.message.content||"{}");
+  } finally { clearTimeout(to); }
+}
+</script>
+<script>
 /* ============ INVESTIGACIÓN ============ */
 $("btnRun").onclick=async()=>{
   show("pipeCard"); renderSteps(); dot("pipeDot","");
-  ["verdictCard","mapCard","exifCard","visionCard","clueCard","reportCard"].forEach(id=>$(id).classList.add("hidden"));
+  ["verdictCard","mapCard","exifCard","contentCard","clueCard","reportCard"].forEach(id=>$(id).classList.add("hidden"));
   const K=getKeys();
 
   // 1. EXIF
@@ -278,19 +413,16 @@ $("btnRun").onclick=async()=>{
     const mk=pick(S.exif,["Make"]), mo=pick(S.exif,["Model"]);
     if(mk||mo) rows.push(["Cámara",(mk||"")+" "+(mo||"")]);
     const sw=pick(S.exif,["Software"]); if(sw) rows.push(["Software",sw]);
-    const iso=pick(S.exif,["ISO"]); if(iso) rows.push(["ISO",iso]);
-    // sol (si hay fecha)
     if(dt){ try{ const d=new Date(dt); if(!isNaN(d)){
       const lat=S.gps?S.gps.latitude:18.2, lng=S.gps?S.gps.longitude:-66.4;
       const sp=SunCalc.getPosition(d,lat,lng);
       const alt=(sp.altitude*180/Math.PI).toFixed(1);
       rows.push(["Sol (altura aprox.)",alt+"° "+(alt>0?"de día":"de noche")]);
     }}catch{} }
-    const n=Object.keys(S.exif).length;
-    rows.push(["Campos EXIF totales",n]);
+    rows.push(["Campos EXIF totales",Object.keys(S.exif).length]);
     $("exifBody").innerHTML=rows.length?rows.map(r=>`<dt>${r[0]}</dt><dd>${r[1]}</dd>`).join(""):"<p class='sub'>Sin metadatos EXIF (común en fotos de redes sociales).</p>";
-    show("exifCard"); dot("exifDot", S.gps?"ok":"warn");
-    setStep("exif","done", S.gps?"GPS encontrado en EXIF":n+" campos, sin GPS");
+    show("exifCard"); dot("exifDot",S.gps?"ok":"warn");
+    setStep("exif","done",S.gps?"GPS encontrado en EXIF":Object.keys(S.exif).length+" campos, sin GPS");
   }catch(e){ setStep("exif","fail","No se pudo leer EXIF"); $("exifBody").innerHTML="<p class='sub'>Sin metadatos.</p>"; show("exifCard"); }
 
   // 2. Forense
@@ -298,68 +430,159 @@ $("btnRun").onclick=async()=>{
   await new Promise(r=>setTimeout(r,300));
   setStep("forense","done",`SHA-256 ${S.sha256.slice(0,12)}…`);
 
-  // 3. Vision
+  // 3. OCR (local gratis, o OCR.space si hay clave)
+  setStep("ocr","run");
+  try{
+    const small=await downscale(S.dataUrl,1600,0.9);
+    if(K.ocrspace){
+      const fd=new FormData();
+      fd.append("apikey",K.ocrspace); fd.append("base64Image",small);
+      fd.append("language","spa"); fd.append("OCREngine","2");
+      const r=await fetch("https://api.ocr.space/parse/image",{method:"POST",body:fd});
+      const j=await r.json();
+      if(j.IsErroredOnProcessing) throw new Error("OCR.space: "+(j.ErrorMessage||"error"));
+      S.ocr=((j.ParsedResults||[])[0]||{}).ParsedText||"";
+      S.ocr=S.ocr.trim();
+      setStep("ocr","done","OCR en la nube (OCR.space)");
+    } else {
+      await loadScript("https://cdn.jsdelivr.net/npm/tesseract.js@5/dist/tesseract.min.js");
+      setStep("ocr","run","Descargando motor OCR (solo la primera vez)…");
+      const {data:{text}}=await Tesseract.recognize(small,"eng+spa",{logger:m=>{
+        if(m.status==="recognizing text") setStep("ocr","run","Leyendo texto… "+Math.round((m.progress||0)*100)+"%");
+      }});
+      S.ocr=(text||"").trim();
+      setStep("ocr","done",S.ocr?S.ocr.split(/\s+/).length+" palabras detectadas":"Sin texto legible");
+    }
+    dot("contentDot",S.ocr?"ok":"warn");
+  }catch(e){ setStep("ocr","fail",String(e.message||e).slice(0,80)); }
+
+  // 4. Objetos (IA local) + Vision (opcional con clave)
+  setStep("objetos","run");
+  try{
+    await loadScript("https://cdn.jsdelivr.net/npm/@tensorflow/tfjs@4/dist/tf.min.js");
+    await loadScript("https://cdn.jsdelivr.net/npm/@tensorflow-models/coco-ssd@2/dist/coco-ssd.min.js");
+    setStep("objetos","run","Cargando modelo de detección (solo la primera vez)…");
+    const img=await loadImage(await downscale(S.dataUrl,800,0.85));
+    const model=await cocoSsd.load();
+    const preds=await model.detect(img);
+    S.objects=preds.filter(p=>p.score>0.4).slice(0,10).map(p=>({clase:p.class,conf:Math.round(p.score*100)}));
+    setStep("objetos","done",S.objects.length?S.objects.length+" objetos detectados":"Sin objetos claros");
+    dot("contentDot","ok");
+  }catch(e){ setStep("objetos","fail",String(e.message||e).slice(0,80)); }
   if(K.vision){
-    setStep("vision","run");
+    setStep("objetos","run","Mejorando con Google Vision…");
     try{
       const r=await fetch("https://vision.googleapis.com/v1/images:annotate?key="+encodeURIComponent(K.vision),{
         method:"POST",headers:{"Content-Type":"application/json"},
         body:JSON.stringify({requests:[{image:{content:S.base64},features:[
           {type:"LANDMARK_DETECTION",maxResults:5},{type:"LOGO_DETECTION",maxResults:5},
           {type:"TEXT_DETECTION"},{type:"WEB_DETECTION",maxResults:10},
-          {type:"LABEL_DETECTION",maxResults:10},{type:"IMAGE_PROPERTIES"}]}]})});
+          {type:"LABEL_DETECTION",maxResults:10}]}]})});
       const j=await r.json();
       if(j.error) throw new Error(j.error.message);
       S.vision=j.responses[0]||{};
-      renderVision(); show("visionCard"); dot("visionDot","ok");
-      setStep("vision","done","Análisis completo");
-    }catch(e){ setStep("vision","fail",String(e.message||e).slice(0,80)); }
-  } else setStep("vision","", "Sin API key — configúrala");
+      (S.vision.landmarkAnnotations||[]).forEach(l=>{
+        (l.locations||[]).forEach(loc=>{ if(loc.latLng) addCandidate(loc.latLng.latitude,loc.latLng.longitude,l.description,"vision",85); });
+      });
+      setStep("objetos","done","Objetos + Google Vision");
+    }catch(e){ setStep("objetos","done","Objetos locales (Vision falló: "+String(e.message||e).slice(0,40)+")"); }
+  }
+  renderContent(); show("contentCard");
 
-  // 4. Bing
+  // 5. Búsqueda inversa
   if(K.bing){
-    setStep("bing","run");
+    setStep("reversa","run");
     try{
-      const fd=new FormData();
       const blob=await (await fetch(S.dataUrl)).blob();
-      fd.append("image",blob,"foto.jpg");
+      const fd=new FormData(); fd.append("image",blob,"foto.jpg");
       const r=await fetch("https://api.bing.microsoft.com/v7.0/images/visualsearch",{
         method:"POST",headers:{"Ocp-Apim-Subscription-Key":K.bing},body:fd});
       const j=await r.json();
       if(j.error) throw new Error(j.error.message);
       S.bing=j; renderBing();
-      setStep("bing","done","Búsqueda inversa completa");
-    }catch(e){ setStep("bing","fail",String(e.message||e).slice(0,80)); }
-  } else setStep("bing","","Sin API key — configúrala");
+      setStep("reversa","done","Búsqueda inversa por API + botones manuales");
+    }catch(e){ setStep("reversa","fail",String(e.message||e).slice(0,80)); }
+  } else setStep("reversa","done","Usa los botones manuales gratuitos abajo");
 
-  // 5. Custom
+  // 5b. Endpoint personalizado (opcional)
   if(K.custom_url){
-    setStep("custom","run");
     try{
       const [hn,hv]=(K.custom_h||"").split(/:(.*)/).map(s=>s&&s.trim());
       const headers={"Content-Type":"application/json"};
       if(hn&&hv) headers[hn]=hv;
       const r=await fetch(K.custom_url,{method:"POST",headers,body:JSON.stringify({image:S.dataUrl})});
       S.custom=await r.json();
-      // intenta extraer coordenadas de respuestas tipo Picarta
       const txt=JSON.stringify(S.custom);
       const m=txt.match(/"lat(?:itude)?"\s*:\s*(-?\d+\.?\d*).*?"l(?:on|ng)(?:gitude)?"\s*:\s*(-?\d+\.?\d*)/i);
       if(m) addCandidate(parseFloat(m[1]),parseFloat(m[2]),"Endpoint personalizado","custom",70);
-      setStep("custom","done","Respuesta recibida");
-    }catch(e){ setStep("custom","fail",String(e.message||e).slice(0,80)); }
-  } else setStep("custom","","Sin endpoint configurado");
+    }catch{}
+  }
 
-  // 6. Gemini analista
-  if(K.gemini){
-    setStep("gemini","run");
+  // 6. Analista IA (gratis por defecto)
+  setStep("ia","run","Analizando pistas…");
+  try{
+    const clues=buildClues();
+    S.ai = K.gemini ? await geminiAnalyze(K,clues) : await pollinationsAnalyze(clues);
+    const src=K.gemini?"gemini":"pollinations";
+    if(S.ai.lat&&S.ai.lng) addCandidate(S.ai.lat,S.ai.lng,S.ai.lugar||"Veredicto IA",src,S.ai.confianza||50);
+    renderVerdict(); show("verdictCard"); dot("verdictDot","ok");
+    setStep("ia","done",(K.gemini?"Gemini":"IA gratuita")+" · confianza "+(S.ai.confianza??"?")+"%");
+  }catch(e){ setStep("ia","fail",String(e.message||e).slice(0,90)); }
+
+  // 7. Analista visual extra (Puter.js / Ollama — opcionales)
+  setStep("visual","run");
+  const extras=[];
+  try{
     try{
-      S.gemini=await geminiAnalyze(K);
-      renderVerdict(); show("verdictCard"); dot("verdictDot","ok");
-      setStep("gemini","done","Veredicto emitido");
-    }catch(e){ setStep("gemini","fail",String(e.message||e).slice(0,80)); }
-  } else setStep("gemini","","Sin API key — configúrala");
+      setStep("visual","run","Probando Puter.js…");
+      const pj=await puterAnalyze();
+      if(pj&&(pj.pais||pj.ciudad||pj.lugar)){
+        S.puter=pj;
+        if(pj.lat&&pj.lng) addCandidate(pj.lat,pj.lng,pj.lugar||"Puter.js","puter",pj.confianza||40);
+        extras.push("Puter.js: "+(pj.lugar||pj.ciudad||pj.pais)+" ("+(pj.confianza??"?")+"%)");
+        renderVerdict();
+      }
+    }catch{}
+    try{
+      const models=await detectOllama();
+      const vm=(models||[]).find(n=>/llava|moondream|qwen2\.?5?-?vl|gemma3|vision|minicpm/i.test(n));
+      if(vm){
+        setStep("visual","run","Ollama ("+vm+") analizando…");
+        const oj=await ollamaAnalyze(vm);
+        if(oj&&(oj.pais||oj.ciudad||oj.lugar)){
+          S.ollama=oj;
+          if(oj.lat&&oj.lng) addCandidate(oj.lat,oj.lng,oj.lugar||"Ollama","ollama",oj.confianza||40);
+          extras.push("Ollama: "+(oj.lugar||oj.ciudad||oj.pais));
+          renderVerdict();
+        }
+      }
+    }catch{}
+    setStep("visual",extras.length?"done":"",extras.length?extras.join(" · "):"No disponible en este equipo (opcional)");
+  }catch{ setStep("visual","","Omitido"); }
 
-  // 7. Mapa
+  // 8. Geocodificar nombres de lugar (Nominatim, gratis)
+  setStep("geo","run");
+  try{
+    const names=[];
+    [S.ai,S.puter,S.ollama].forEach(a=>{ ((a&&a.nombres_lugar)||[]).forEach(n=>{ if(n&&names.length<4&&!names.includes(n)) names.push(String(n)); }); });
+    if(S.ocr&&S.ocr.trim().length<80&&names.length<4){
+      const t=S.ocr.trim().replace(/\s+/g," ");
+      if(t&&!names.includes(t)) names.push(t);
+    }
+    let found=0;
+    for(const q of names.slice(0,3)){
+      setStep("geo","run","Buscando: "+q.slice(0,40));
+      try{
+        const r=await fetch("https://nominatim.openstreetmap.org/search?format=json&limit=1&accept-language=es&q="+encodeURIComponent(q));
+        const j=await r.json();
+        if(j[0]){ addCandidate(parseFloat(j[0].lat),parseFloat(j[0].lon),j[0].display_name.split(",").slice(0,2).join(","),"nominatim",60); found++; }
+      }catch{}
+      await new Promise(r=>setTimeout(r,1100));
+    }
+    setStep("geo","done",found?found+" lugares geocodificados":"Sin nombres para geocodificar");
+  }catch(e){ setStep("geo","fail",String(e.message||e).slice(0,80)); }
+
+  // 9. Mapa + reporte
   setStep("mapa","run");
   renderMap(); renderClues(); renderReport();
   show("mapCard"); show("clueCard"); show("reportCard");
@@ -367,32 +590,23 @@ $("btnRun").onclick=async()=>{
   setStep("mapa","done",S.candidates.length+" ubicaciones candidatas");
 };
 
-function addCandidate(lat,lng,label,source,conf){
-  if(!isFinite(lat)||!isFinite(lng)||Math.abs(lat)>90||Math.abs(lng)>180) return;
-  if(S.candidates.some(c=>Math.abs(c.lat-lat)<0.001&&Math.abs(c.lng-lng)<0.001)) return;
-  S.candidates.push({lat,lng,label,source,conf});
-}
-
-/* ============ RENDER: VISION ============ */
-function renderVision(){
-  const v=S.vision, h=[];
-  (v.landmarkAnnotations||[]).forEach(l=>{
-    h.push(`<span class="tag g">Monumento: ${esc(l.description)}</span>`);
-    (l.locations||[]).forEach(loc=>{ if(loc.latLng) addCandidate(loc.latLng.latitude,loc.latLng.longitude,l.description,"vision",85); });
-  });
-  (v.logoAnnotations||[]).forEach(l=>h.push(`<span class="tag">Logo: ${esc(l.description)}</span>`));
-  (v.labelAnnotations||[]).slice(0,8).forEach(l=>h.push(`<span class="tag">${esc(l.description)}</span>`));
-  const txt=(v.fullTextAnnotation||{}).text;
-  if(txt) h.push(`<div class="clue"><b>Texto detectado (OCR):</b><br><span class="mono" style="font-size:12px">${esc(txt.slice(0,500))}</span></div>`);
-  const web=v.webDetection||{};
-  (web.webEntities||[]).slice(0,6).forEach(e=>{ if(e.description) h.push(`<span class="tag a">Web: ${esc(e.description)}</span>`); });
-  (web.pagesWithMatchingImages||[]).slice(0,5).forEach(p=>{
-    h.push(`<div class="clue">Coincidencia web: <a href="${esc(p.url)}" target="_blank" style="color:#60a5fa">${esc(p.url.slice(0,70))}</a></div>`);
-  });
-  (web.fullMatchingImages||[]).slice(0,3).forEach(im=>{
-    h.push(`<div class="clue">Imagen idéntica en: <a href="${esc(im.url)}" target="_blank" style="color:#60a5fa">${esc(im.url.slice(0,70))}</a></div>`);
-  });
-  $("visionBody").innerHTML=h.length?h.join(""):"<p class='sub'>Sin hallazgos relevantes.</p>";
+/* ============ RENDER ============ */
+function renderContent(){
+  const h=[];
+  if(S.ocr) h.push(`<div class="clue"><b>Texto detectado (OCR ${getKeys().ocrspace?"nube":"local"}):</b><br><span class="mono" style="font-size:12.5px">${esc(S.ocr.slice(0,600))}</span></div>`);
+  else h.push(`<div class="clue sub">Sin texto legible en la imagen.</div>`);
+  if(S.objects.length) h.push(`<div style="margin-top:8px"><b>Objetos:</b><br>${S.objects.map(o=>`<span class="tag">${esc(o.clase)} ${o.conf}%</span>`).join("")}</div>`);
+  if(S.vision){
+    const v=S.vision;
+    (v.landmarkAnnotations||[]).forEach(l=>h.push(`<span class="tag g">Monumento: ${esc(l.description)}</span>`));
+    (v.logoAnnotations||[]).forEach(l=>h.push(`<span class="tag">Logo: ${esc(l.description)}</span>`));
+    (v.labelAnnotations||[]).slice(0,8).forEach(l=>h.push(`<span class="tag">${esc(l.description)}</span>`));
+    ((v.webDetection||{}).webEntities||[]).slice(0,6).forEach(e=>{ if(e.description) h.push(`<span class="tag a">Web: ${esc(e.description)}</span>`); });
+    ((v.webDetection||{}).pagesWithMatchingImages||[]).slice(0,5).forEach(p=>{
+      h.push(`<div class="clue">Coincidencia web: <a href="${esc(p.url)}" target="_blank" style="color:#60a5fa">${esc(p.url.slice(0,70))}</a></div>`);
+    });
+  }
+  $("contentBody").innerHTML=h.join("");
 }
 function renderBing(){
   const tags=((S.bing||{}).tags||[]), h=[];
@@ -402,59 +616,32 @@ function renderBing(){
       h.push(`<div class="clue">${esc(a.actionType||"Resultado")}: <a href="${esc(im.hostPageUrl||im.contentUrl)}" target="_blank" style="color:#60a5fa">${esc((im.name||im.hostPageUrl||"").slice(0,70))}</a></div>`);
     });
   });});
-  if(h.length) $("visionBody").innerHTML+=`<h2 style="margin-top:14px;font-size:14px">Bing Visual Search</h2>`+h.join("");
+  if(h.length) $("contentBody").innerHTML+=`<h2 style="margin-top:14px;font-size:14px">Bing Visual Search</h2>`+h.join("");
 }
-
-/* ============ GEMINI ANALISTA ============ */
-async function geminiAnalyze(K){
-  const clues=[];
-  if(S.gps) clues.push(`EXIF GPS: ${S.gps.latitude}, ${S.gps.longitude}`);
-  if(S.exif){ const d=S.exif.DateTimeOriginal||S.exif.CreateDate; if(d) clues.push(`Fecha de toma: ${d}`);
-    if(S.exif.Make||S.exif.Model) clues.push(`Cámara: ${S.exif.Make||""} ${S.exif.Model||""}`); }
-  if(S.vision){
-    (S.vision.landmarkAnnotations||[]).forEach(l=>clues.push(`Monumento: ${l.description}`));
-    (S.vision.logoAnnotations||[]).forEach(l=>clues.push(`Logo: ${l.description}`));
-    const t=(S.vision.fullTextAnnotation||{}).text; if(t) clues.push(`Texto en imagen: ${t.slice(0,300)}`);
-    (S.vision.labelAnnotations||[]).slice(0,6).forEach(l=>clues.push(`Etiqueta: ${l.description}`));
-    ((S.vision.webDetection||{}).webEntities||[]).slice(0,5).forEach(e=>{ if(e.description) clues.push(`Entidad web: ${e.description}`); });
-  }
-  const prompt=`Eres un analista forense OSINT. Con las pistas de esta foto, determina dónde fue tomada.
-Pistas: ${clues.join(" | ")||"sin pistas de metadatos"}
-Responde SOLO JSON válido: {"pais":"","ciudad":"","lugar":"","confianza":0-100,"lat":null,"lng":null,"razonamiento":"","pistas_clave":["..."],"advertencia":""}
-Si no puedes determinar el lugar, confianza baja y lat/lng null. Sé honesto, no inventes.`;
-  const model=K.model||"gemini-2.0-flash";
-  const r=await fetch(`https://generativelanguage.googleapis.com/v1beta/models/${encodeURIComponent(model)}:generateContent?key=${encodeURIComponent(K.gemini)}`,{
-    method:"POST",headers:{"Content-Type":"application/json"},
-    body:JSON.stringify({contents:[{parts:[{text:prompt},{inline_data:{mime_type:S.file.type,data:S.base64}}]}]}),
-      generationConfig:{response_mime_type:"application/json",temperature:0.2}});
-  const j=await r.json();
-  if(j.error) throw new Error(j.error.message);
-  let txt=j.candidates?.[0]?.content?.parts?.[0]?.text||"{}";
-  txt=txt.replace(/```json?|```/g,"").trim();
-  const out=JSON.parse(txt);
-  if(out.lat&&out.lng) addCandidate(out.lat,out.lng,(out.lugar||"Veredicto IA"),"gemini",out.confianza||50);
-  return out;
-}
-function renderVerdict(){
-  const g=S.gemini, c=Math.min(100,Math.max(0,g.confianza||0));
-  $("verdictBody").innerHTML=
-    `<div class="verdict"><b>${esc(g.lugar||"Lugar no determinado")}</b><br>`+
+function verdictBox(g,fuente){
+  const c=Math.min(100,Math.max(0,g.confianza??0));
+  return `<div class="verdict" style="margin-bottom:10px"><b>${esc(g.lugar||"Lugar no determinado")}</b> <span class="pill">${esc(fuente)}</span><br>`+
     `${esc(g.ciudad||"")}${g.ciudad&&g.pais?", ":""}${esc(g.pais||"")}`+
     `<div class="confbar"><i style="width:${c}%"></i></div>`+
     `<small class="mono" style="color:#8b94a7">confianza: ${c}%</small></div>`+
-    (g.razonamiento?`<p style="margin-top:10px;font-size:13.5px;line-height:1.6">${esc(g.razonamiento)}</p>`:"")+
-    (g.pistas_clave&&g.pistas_clave.length?`<div style="margin-top:8px">${g.pistas_clave.map(p=>`<span class="tag g">${esc(p)}</span>`).join("")}</div>`:"")+
-    (g.advertencia?`<p class="sub" style="margin-top:8px">⚠ ${esc(g.advertencia)}</p>`:"");
+    (g.razonamiento?`<p style="margin:6px 0 10px;font-size:13.5px;line-height:1.6">${esc(g.razonamiento)}</p>`:"")+
+    (g.pistas_clave&&g.pistas_clave.length?`<div style="margin-bottom:8px">${g.pistas_clave.map(p=>`<span class="tag g">${esc(p)}</span>`).join("")}</div>`:"")+
+    (g.advertencia?`<p class="sub" style="margin-bottom:8px">⚠ ${esc(g.advertencia)}</p>`:"");
 }
-
-/* ============ MAPA / PISTAS / REPORTE ============ */
+function renderVerdict(){
+  const h=[];
+  if(S.ai) h.push(verdictBox(S.ai,getKeys().gemini?"Gemini":"IA gratuita"));
+  if(S.puter) h.push(verdictBox(S.puter,"Puter.js"));
+  if(S.ollama) h.push(verdictBox(S.ollama,"Ollama local"));
+  $("verdictBody").innerHTML=h.length?h.join(""):"<p class='sub'>No se pudo generar veredicto.</p>";
+}
 let map=null;
 function renderMap(){
   if(map){ map.remove(); map=null; }
   $("map").innerHTML="";
   map=L.map("map").setView([20,-40],2);
   L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png",{attribution:"© OpenStreetMap"}).addTo(map);
-  const colors={exif:"green",vision:"blue",gemini:"orange",custom:"purple",bing:"red"};
+  const colors={exif:"green",vision:"blue",pollinations:"orange",gemini:"orange",puter:"cyan",ollama:"pink",nominatim:"yellow",custom:"purple",bing:"red"};
   S.candidates.forEach(c=>{
     L.circleMarker([c.lat,c.lng],{radius:9,color:colors[c.source]||"gray",fillOpacity:.8})
       .addTo(map).bindPopup(`<b>${esc(c.label)}</b><br>Fuente: ${c.source}<br>Confianza: ${c.conf}%`);
@@ -462,17 +649,16 @@ function renderMap(){
   if(S.candidates.length) map.fitBounds(S.candidates.map(c=>[c.lat,c.lng]),{padding:[40,40]});
   $("candList").innerHTML=S.candidates.length
     ? S.candidates.map(c=>`<span class="tag ${c.source==="exif"?"g":""}">${esc(c.label)} · ${c.conf}%</span>`).join("")
-    : "<p class='sub'>Sin coordenadas. Agrega APIs o revisa las pistas manuales.</p>";
+    : "<p class='sub'>Sin coordenadas. Revisa las pistas y la búsqueda inversa manual.</p>";
 }
 function renderClues(){
   const c=[];
   if(S.gps) c.push(`<b>GPS EXIF:</b> <span class="mono">${S.gps.latitude.toFixed(6)}, ${S.gps.longitude.toFixed(6)}</span> — la pista más fuerte.`);
+  if(S.ocr) c.push(`<b>Texto en la foto:</b> <span class="mono">${esc(S.ocr.slice(0,200))}</span> — idiomas y nombres propios delatan el país.`);
+  if(S.objects.length) c.push(`<b>Objetos:</b> ${S.objects.map(o=>esc(o.clase)).join(", ")}`);
   (S.vision?.landmarkAnnotations||[]).forEach(l=>c.push(`<b>Monumento:</b> ${esc(l.description)}`));
   (S.vision?.logoAnnotations||[]).forEach(l=>c.push(`<b>Logo visible:</b> ${esc(l.description)} — busca dónde opera esa marca.`));
-  const t=(S.vision?.fullTextAnnotation||{}).text;
-  if(t) c.push(`<b>Texto en la foto:</b> <span class="mono">${esc(t.slice(0,200))}</span> — idiomas y nombres propios delatan el país.`);
-  ((S.vision?.webDetection||{}).pagesWithMatchingImages||[]).slice(0,3).forEach(p=>c.push(`<b>La foto existe en:</b> ${esc(p.url.slice(0,80))}`));
-  if(S.gemini?.pistas_clave) S.gemini.pistas_clave.forEach(p=>c.push(`<b>IA:</b> ${esc(p)}`));
+  [S.ai,S.puter,S.ollama].forEach(a=>{ if(a&&a.pistas_clave) a.pistas_clave.forEach(p=>c.push(`<b>IA:</b> ${esc(p)}`)); });
   if(S.exif?.DateTimeOriginal) c.push(`<b>Fecha:</b> ${esc(String(S.exif.DateTimeOriginal))} — verifica clima/eventos de ese día.`);
   c.push(`<b>Archivo:</b> ${S.w}×${S.h}px, ${(S.bytes/1024).toFixed(0)}KB, SHA-256 <span class="mono" style="font-size:11px">${S.sha256.slice(0,24)}…</span>`);
   $("clueBody").innerHTML=c.map(x=>`<div class="clue">${x}</div>`).join("");
@@ -487,13 +673,14 @@ function renderReport(){
   L_.push("",`## EXIF`);
   if(S.gps) L_.push(`- GPS: ${S.gps.latitude}, ${S.gps.longitude}`);
   if(S.exif){ ["DateTimeOriginal","Make","Model","Software"].forEach(k=>{ if(S.exif[k]) L_.push(`- ${k}: ${S.exif[k]}`); }); }
-  L_.push("",`## Google Vision`);
-  (S.vision?.landmarkAnnotations||[]).forEach(l=>L_.push(`- Monumento: ${l.description}`));
-  (S.vision?.logoAnnotations||[]).forEach(l=>L_.push(`- Logo: ${l.description}`));
-  const t=(S.vision?.fullTextAnnotation||{}).text; if(t) L_.push(`- OCR: ${t.slice(0,300)}`);
+  if(S.ocr) L_.push("",`## OCR`,`${S.ocr.slice(0,500)}`);
+  if(S.objects.length) L_.push("",`## Objetos`,`- ${S.objects.map(o=>`${o.clase} (${o.conf}%)`).join(", ")}`);
   L_.push("",`## Veredicto IA`);
-  if(S.gemini) L_.push(`- ${S.gemini.lugar||"?"} — ${S.gemini.ciudad||""} ${S.gemini.pais||""} (confianza ${S.gemini.confianza||"?"}%)`,`- ${S.gemini.razonamiento||""}`);
-  else L_.push("- No generado (sin API key de Gemini).");
+  const K=getKeys();
+  if(S.ai) L_.push(`- [${K.gemini?"Gemini":"IA gratuita"}] ${S.ai.lugar||"?"} — ${S.ai.ciudad||""} ${S.ai.pais||""} (confianza ${S.ai.confianza??"?"}%)`,`  ${S.ai.razonamiento||""}`);
+  if(S.puter) L_.push(`- [Puter.js] ${S.puter.lugar||"?"} — ${S.puter.ciudad||""} ${S.puter.pais||""} (confianza ${S.puter.confianza??"?"}%)`);
+  if(S.ollama) L_.push(`- [Ollama] ${S.ollama.lugar||"?"} — ${S.ollama.ciudad||""} ${S.ollama.pais||""}`);
+  if(!S.ai&&!S.puter&&!S.ollama) L_.push("- No generado.");
   L_.push("",`> Verificar siempre con múltiples fuentes antes de concluir.`);
   $("report").value=L_.join("\n");
 }
@@ -501,10 +688,10 @@ $("btnCopy").onclick=()=>{ $("report").select(); document.execCommand("copy"); $
 $("btnDl").onclick=()=>{ const a=document.createElement("a"); a.href=URL.createObjectURL(new Blob([$("report").value],{type:"text/markdown"})); a.download="fotorastro-reporte.md"; a.click(); };
 document.querySelectorAll("[data-ext]").forEach(b=>b.onclick=()=>window.open(b.dataset.ext,"_blank"));
 
-/* ============ MODAL KEYS ============ */
-$("btnKeys").onclick=()=>{ loadKeysUI(); $("keysModal").classList.add("open"); };
+/* ============ MODAL OPCIONES ============ */
+$("btnAdv").onclick=()=>{ loadKeysUI(); $("keysModal").classList.add("open"); };
 $("btnCloseKeys").onclick=()=>$("keysModal").classList.remove("open");
-$("btnSaveKeys").onclick=()=>{ saveKeys({vision:$("k_vision").value.trim(),gemini:$("k_gemini").value.trim(),model:$("k_model").value.trim()||"gemini-2.0-flash",bing:$("k_bing").value.trim(),custom_url:$("k_custom_url").value.trim(),custom_h:$("k_custom_h").value.trim()}); $("keysModal").classList.remove("open"); };
+$("btnSaveKeys").onclick=()=>{ saveKeys({vision:$("k_vision").value.trim(),gemini:$("k_gemini").value.trim(),model:$("k_model").value.trim()||"gemini-2.0-flash",bing:$("k_bing").value.trim(),ocrspace:$("k_ocrspace").value.trim(),custom_url:$("k_custom_url").value.trim(),custom_h:$("k_custom_h").value.trim()}); $("keysModal").classList.remove("open"); };
 $("keysModal").addEventListener("click",e=>{ if(e.target===$("keysModal")) $("keysModal").classList.remove("open"); });
 loadKeysUI();
 </script>
