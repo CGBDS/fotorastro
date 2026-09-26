@@ -245,7 +245,7 @@ const STEPS = [
   ["objetos","Objetos detectados","IA local (COCO-SSD) en tu navegador"],
   ["reversa","Búsqueda inversa","Botones manuales gratis (+API si configuras clave)"],
   ["ia","Analista IA","Gratis sin clave (Pollinations.ai) o Gemini si lo configuras"],
-  ["visual","Analista visual extra","Puter.js / Ollama local — solo si están disponibles"],
+  ["visual","Analista visual extra","Puter.js / Ollama local — opcional, solo si lo pides"],
   ["geo","Geocodificar lugares","Nominatim (OpenStreetMap), gratis sin clave"],
   ["mapa","Mapa y reporte","Candidatos ubicados + reporte descargable"],
 ];
@@ -529,36 +529,52 @@ $("btnRun").onclick=async()=>{
     setStep("ia","done",(K.gemini?"Gemini":"IA gratuita")+" · confianza "+(S.ai.confianza??"?")+"%");
   }catch(e){ setStep("ia","fail",String(e.message||e).slice(0,90)); }
 
-  // 7. Analista visual extra (Puter.js / Ollama — opcionales)
+  // 7. Analista visual extra (Puter.js / Ollama — OPCIONAL, solo si el usuario lo pide)
+  // Puter puede abrir un popup de login en puter.com; por eso nunca se ejecuta solo.
   setStep("visual","run");
   const extras=[];
-  try{
+  const wantVisual = await new Promise(res=>{
+    const el=$("step-visual"); if(!el){ res(false); return; }
+    const wrap=document.createElement("div");
+    wrap.style.cssText="margin-top:8px;display:flex;gap:8px;flex-wrap:wrap";
+    wrap.innerHTML=`<button class="btn" style="padding:8px 12px;font-size:12px" id="btnVisGo">Ejecutar analista visual</button>`+
+      `<button class="btn ghost" style="padding:8px 12px;font-size:12px" id="btnVisNo">Omitir</button>`;
+    el.appendChild(wrap);
+    el.querySelector("small").textContent="Opcional: Puter puede pedir cuenta gratuita en puter.com. Ejecútalo u omítelo.";
+    $("btnVisGo").onclick=()=>{ wrap.remove(); res(true); };
+    $("btnVisNo").onclick=()=>{ wrap.remove(); res(false); };
+  });
+  if(wantVisual){
     try{
-      setStep("visual","run","Probando Puter.js…");
-      const pj=await puterAnalyze();
-      if(pj&&(pj.pais||pj.ciudad||pj.lugar)){
-        S.puter=pj;
-        if(pj.lat&&pj.lng) addCandidate(pj.lat,pj.lng,pj.lugar||"Puter.js","puter",pj.confianza||40);
-        extras.push("Puter.js: "+(pj.lugar||pj.ciudad||pj.pais)+" ("+(pj.confianza??"?")+"%)");
-        renderVerdict();
-      }
-    }catch{}
-    try{
-      const models=await detectOllama();
-      const vm=(models||[]).find(n=>/llava|moondream|qwen2\.?5?-?vl|gemma3|vision|minicpm/i.test(n));
-      if(vm){
-        setStep("visual","run","Ollama ("+vm+") analizando…");
-        const oj=await ollamaAnalyze(vm);
-        if(oj&&(oj.pais||oj.ciudad||oj.lugar)){
-          S.ollama=oj;
-          if(oj.lat&&oj.lng) addCandidate(oj.lat,oj.lng,oj.lugar||"Ollama","ollama",oj.confianza||40);
-          extras.push("Ollama: "+(oj.lugar||oj.ciudad||oj.pais));
+      try{
+        setStep("visual","run","Probando Puter.js…");
+        const pj=await puterAnalyze();
+        if(pj&&(pj.pais||pj.ciudad||pj.lugar)){
+          S.puter=pj;
+          if(pj.lat&&pj.lng) addCandidate(pj.lat,pj.lng,pj.lugar||"Puter.js","puter",pj.confianza||40);
+          extras.push("Puter.js: "+(pj.lugar||pj.ciudad||pj.pais)+" ("+(pj.confianza??"?")+"%)");
           renderVerdict();
         }
-      }
-    }catch{}
-    setStep("visual",extras.length?"done":"",extras.length?extras.join(" · "):"No disponible en este equipo (opcional)");
-  }catch{ setStep("visual","","Omitido"); }
+      }catch{}
+      try{
+        const models=await detectOllama();
+        const vm=(models||[]).find(n=>/llava|moondream|qwen2\.?5?-?vl|gemma3|vision|minicpm/i.test(n));
+        if(vm){
+          setStep("visual","run","Ollama ("+vm+") analizando…");
+          const oj=await ollamaAnalyze(vm);
+          if(oj&&(oj.pais||oj.ciudad||oj.lugar)){
+            S.ollama=oj;
+            if(oj.lat&&oj.lng) addCandidate(oj.lat,oj.lng,oj.lugar||"Ollama","ollama",oj.confianza||40);
+            extras.push("Ollama: "+(oj.lugar||oj.ciudad||oj.pais));
+            renderVerdict();
+          }
+        }
+      }catch{}
+      setStep("visual",extras.length?"done":"",extras.length?extras.join(" · "):"Sin resultados (opcional)");
+    }catch{ setStep("visual","","Omitido"); }
+  }else{
+    setStep("visual","","Omitido por el usuario (opcional)");
+  }
 
   // 8. Geocodificar nombres de lugar (Nominatim, gratis)
   setStep("geo","run");
