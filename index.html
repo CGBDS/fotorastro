@@ -1,0 +1,512 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>FotoRastro — Investigación OSINT de fotos</title>
+<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css">
+<style>
+:root{
+  --bg:#0b0e14; --panel:#121722; --panel2:#0e1220; --line:#1f2737;
+  --txt:#dbe3f0; --dim:#8b94a7; --green:#4ade80; --amber:#fbbf24; --red:#f87171; --blue:#60a5fa;
+}
+*{box-sizing:border-box;margin:0;padding:0}
+body{background:var(--bg);color:var(--txt);font-family:"Segoe UI",system-ui,-apple-system,sans-serif;min-height:100vh}
+.mono{font-family:ui-monospace,"Cascadia Code",Consolas,monospace}
+header{border-bottom:1px solid var(--line);padding:14px 22px;display:flex;align-items:center;gap:14px;flex-wrap:wrap}
+.logo{width:38px;height:38px;border-radius:10px;background:linear-gradient(135deg,#16a34a,#4ade80);display:flex;align-items:center;justify-content:center;flex:none}
+.logo svg{width:22px;height:22px;stroke:#06210f}
+h1{font-size:20px;letter-spacing:.5px}
+h1 span{color:var(--green)}
+.sub{color:var(--dim);font-size:13px}
+.spacer{flex:1}
+button{cursor:pointer;border:1px solid var(--line);background:#1a2233;color:var(--txt);border-radius:8px;padding:9px 16px;font-size:14px;transition:.15s}
+button:hover{border-color:var(--green);color:#fff}
+button.primary{background:linear-gradient(135deg,#16a34a,#22c55e);border:none;color:#04160a;font-weight:700}
+button.primary:hover{filter:brightness(1.1)}
+button:disabled{opacity:.4;cursor:not-allowed}
+main{max-width:1180px;margin:0 auto;padding:22px;display:grid;gap:18px}
+.card{background:var(--panel);border:1px solid var(--line);border-radius:14px;padding:20px}
+.card h2{font-size:16px;margin-bottom:12px;display:flex;align-items:center;gap:8px}
+.card h2 .dot{width:8px;height:8px;border-radius:50%;background:var(--dim)}
+.card h2 .dot.ok{background:var(--green)} .card h2 .dot.warn{background:var(--amber)} .card h2 .dot.err{background:var(--red)}
+#drop{border:2px dashed #2a3549;border-radius:14px;padding:44px 20px;text-align:center;cursor:pointer;transition:.2s;background:var(--panel2)}
+#drop:hover,#drop.over{border-color:var(--green);background:#101827}
+#drop p{color:var(--dim);margin-top:10px;font-size:14px}
+#preview{display:none;gap:18px;align-items:start}
+#preview img{max-width:340px;width:100%;border-radius:10px;border:1px solid var(--line)}
+.filemeta{font-size:13px;color:var(--dim);display:grid;gap:6px}
+.filemeta b{color:var(--txt)}
+.steps{display:grid;gap:8px}
+.step{display:flex;gap:12px;align-items:center;padding:10px 14px;border:1px solid var(--line);border-radius:10px;font-size:14px;background:var(--panel2)}
+.step .st{width:26px;height:26px;border-radius:50%;border:2px solid #334155;display:flex;align-items:center;justify-content:center;font-size:12px;flex:none}
+.step.run .st{border-color:var(--amber);animation:pulse 1s infinite}
+.step.done .st{border-color:var(--green);background:#14532d;color:#fff}
+.step.fail .st{border-color:var(--red);background:#7f1d1d;color:#fff}
+.step small{color:var(--dim);display:block}
+@keyframes pulse{50%{opacity:.4}}
+.grid2{display:grid;grid-template-columns:1fr 1fr;gap:18px}
+@media(max-width:820px){.grid2{grid-template-columns:1fr}}
+.kv{display:grid;grid-template-columns:auto 1fr;gap:6px 14px;font-size:13.5px}
+.kv dt{color:var(--dim)} .kv dd{color:var(--txt);word-break:break-word}
+.tag{display:inline-block;background:#1a2233;border:1px solid var(--line);border-radius:20px;padding:3px 12px;font-size:12.5px;margin:3px 4px 3px 0}
+.tag.g{border-color:#14532d;background:#052e16;color:#bbf7d0}
+.tag.a{border-color:#713f12;background:#451a03;color:#fde68a}
+#map{height:380px;border-radius:10px;border:1px solid var(--line);z-index:0}
+.verdict{border-left:4px solid var(--green);padding:12px 16px;background:var(--panel2);border-radius:0 10px 10px 0;font-size:15px;line-height:1.6}
+.confbar{height:8px;background:#1a2233;border-radius:4px;overflow:hidden;margin-top:8px}
+.confbar i{display:block;height:100%;background:linear-gradient(90deg,#f59e0b,#4ade80)}
+.clue{padding:8px 0;border-bottom:1px dashed var(--line);font-size:13.5px}
+.clue:last-child{border:none}
+textarea#report{width:100%;min-height:260px;background:#080b12;color:#c9d4e8;border:1px solid var(--line);border-radius:10px;padding:14px;font-size:12.5px}
+.modal{position:fixed;inset:0;background:rgba(0,0,0,.7);display:none;align-items:center;justify-content:center;z-index:50;padding:20px}
+.modal.open{display:flex}
+.mbox{background:var(--panel);border:1px solid var(--line);border-radius:14px;padding:24px;max-width:560px;width:100%;max-height:90vh;overflow:auto}
+.mbox h3{margin-bottom:14px}
+.field{margin-bottom:12px}
+.field label{display:block;font-size:13px;color:var(--dim);margin-bottom:5px}
+.field input{width:100%;background:#080b12;border:1px solid var(--line);border-radius:8px;padding:9px 12px;color:var(--txt);font-size:13px}
+.field .hint{font-size:11.5px;color:var(--dim);margin-top:4px}
+.row{display:flex;gap:10px;flex-wrap:wrap;margin-top:14px}
+.extlinks{display:flex;gap:8px;flex-wrap:wrap}
+footer{text-align:center;color:var(--dim);font-size:12px;padding:26px;border-top:1px solid var(--line);margin-top:10px}
+.hidden{display:none!important}
+.pill{font-size:11px;padding:2px 10px;border-radius:12px;background:#1a2233;border:1px solid var(--line);color:var(--dim)}
+</style>
+</head>
+<body>
+<header>
+  <div class="logo"><svg viewBox="0 0 24 24" fill="none" stroke-width="2.4"><circle cx="11" cy="11" r="7"/><path d="M21 21l-4.3-4.3"/></svg></div>
+  <div><h1>Foto<span>Rastro</span></h1><div class="sub">Investigación OSINT todo-en-uno a partir de una foto</div></div>
+  <div class="spacer"></div>
+  <button id="btnKeys">Configurar APIs</button>
+</header>
+<main>
+  <div class="card" id="dropCard">
+    <div id="drop">
+      <svg width="44" height="44" viewBox="0 0 24 24" fill="none" stroke="#4ade80" stroke-width="1.6"><rect x="3" y="3" width="18" height="18" rx="3"/><circle cx="8.5" cy="8.5" r="1.5"/><path d="M21 15l-5-5L5 21"/></svg>
+      <p><b style="color:#dbe3f0">Arrastra una foto aquí</b> o haz clic para elegirla</p>
+      <p style="font-size:12px">Todo se procesa en tu navegador. Las APIs solo reciben la imagen cuando ejecutas cada módulo.</p>
+      <input type="file" id="fileInput" accept="image/*" class="hidden">
+    </div>
+    <div id="preview">
+      <img id="imgPrev" alt="foto analizada">
+      <div style="flex:1">
+        <h2 style="margin-bottom:10px">Archivo</h2>
+        <div class="filemeta mono" id="fileMeta"></div>
+        <div class="row"><button class="primary" id="btnRun">Iniciar investigación</button>
+        <button id="btnReset">Otra foto</button></div>
+      </div>
+    </div>
+  </div>
+
+  <div class="card hidden" id="pipeCard">
+    <h2><span class="dot" id="pipeDot"></span> Pipeline de investigación</h2>
+    <div class="steps" id="steps"></div>
+  </div>
+
+  <div class="grid2">
+    <div class="card hidden" id="verdictCard">
+      <h2><span class="dot" id="verdictDot"></span> Veredicto del analista IA</h2>
+      <div id="verdictBody"><p class="sub">Se genera al correr la investigación con API de Gemini configurada.</p></div>
+    </div>
+    <div class="card hidden" id="mapCard">
+      <h2><span class="dot" id="mapDot"></span> Ubicaciones candidatas</h2>
+      <div id="map"></div>
+      <div id="candList" style="margin-top:10px"></div>
+    </div>
+  </div>
+
+  <div class="grid2">
+    <div class="card hidden" id="exifCard">
+      <h2><span class="dot" id="exifDot"></span> Metadatos EXIF</h2>
+      <dl class="kv mono" id="exifBody"></dl>
+    </div>
+    <div class="card hidden" id="visionCard">
+      <h2><span class="dot" id="visionDot"></span> Google Vision</h2>
+      <div id="visionBody"></div>
+    </div>
+  </div>
+
+  <div class="card hidden" id="clueCard">
+    <h2><span class="dot" id="clueDot"></span> Pistas reunidas</h2>
+    <div id="clueBody"></div>
+    <h2 style="margin-top:16px">Búsqueda inversa manual</h2>
+    <p class="sub" style="margin-bottom:8px">Abre la foto en estos motores (arrástrala a la página que se abre):</p>
+    <div class="extlinks">
+      <button data-ext="https://lens.google.com/">Google Lens</button>
+      <button data-ext="https://www.bing.com/visualsearch">Bing Visual</button>
+      <button data-ext="https://tineye.com/">TinEye</button>
+      <button data-ext="https://yandex.com/images/">Yandex</button>
+    </div>
+  </div>
+
+  <div class="card hidden" id="reportCard">
+    <h2><span class="dot ok"></span> Reporte de investigación</h2>
+    <textarea id="report" class="mono" readonly></textarea>
+    <div class="row">
+      <button id="btnCopy">Copiar reporte</button>
+      <button id="btnDl">Descargar .md</button>
+    </div>
+  </div>
+</main>
+
+<div class="modal" id="keysModal">
+  <div class="mbox">
+    <h3>Claves de API <span class="pill">se guardan solo en tu navegador</span></h3>
+    <div class="field"><label>Google Cloud Vision — API key</label>
+      <input id="k_vision" type="password" placeholder="AIza...">
+      <div class="hint">Google Cloud Console → APIs → Cloud Vision API → Credenciales. 1,000 análisis gratis/mes.</div></div>
+    <div class="field"><label>Gemini — API key</label>
+      <input id="k_gemini" type="password" placeholder="AIza...">
+      <div class="hint">Gratis en Google AI Studio (aistudio.google.com). Alimenta al analista IA.</div></div>
+    <div class="field"><label>Gemini — modelo</label>
+      <input id="k_model" type="text" value="gemini-2.0-flash">
+      <div class="hint">Cámbialo si Google renombra el modelo.</div></div>
+    <div class="field"><label>Bing Visual Search — clave (opcional)</label>
+      <input id="k_bing" type="password" placeholder="Ocp-Apim-Subscription-Key">
+      <div class="hint">Azure Portal → Bing Search v7. 1,000 llamadas gratis/mes. Búsqueda inversa por API.</div></div>
+    <div class="field"><label>Endpoint personalizado — URL (opcional, ej. Picarta)</label>
+      <input id="k_custom_url" type="text" placeholder="https://...">
+      <div class="hint">POST con JSON {"image":"data:image/jpeg;base64,..."}. Copia el endpoint de tu panel de Picarta u otro servicio.</div></div>
+    <div class="field"><label>Endpoint personalizado — cabecera de auth</label>
+      <input id="k_custom_h" type="text" placeholder="Authorization: Bearer TU_CLAVE">
+      <div class="hint">Formato "Nombre: valor". Se envía tal cual.</div></div>
+    <div class="row">
+      <button class="primary" id="btnSaveKeys">Guardar</button>
+      <button id="btnCloseKeys">Cerrar</button>
+    </div>
+  </div>
+</div>
+
+<footer>FotoRastro · Úsalo solo con fotos propias o con derecho a analizar · Ninguna herramienta garantiza la ubicación exacta: verifica siempre con varias fuentes.</footer>
+
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/exifr@7/dist/full.umd.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/suncalc@1.9.0/suncalc.js"></script>
+<script>
+/* ============ ESTADO ============ */
+const S = { file:null, dataUrl:"", base64:"", w:0, h:0, bytes:0, sha256:"",
+  exif:null, gps:null, vision:null, gemini:null, bing:null, custom:null, candidates:[] };
+const $ = id => document.getElementById(id);
+const esc = s => String(s??"").replace(/[&<>"]/g, c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]));
+
+function getKeys(){
+  try{ return JSON.parse(localStorage.getItem("fotorastro_keys")||"{}"); }catch{ return {}; }
+}
+function saveKeys(k){ localStorage.setItem("fotorastro_keys", JSON.stringify(k)); }
+function loadKeysUI(){ const k=getKeys(); ["vision","gemini","model","bing","custom_url","custom_h"].forEach(f=>{ $("k_"+f).value=k[f]||($("k_"+f).value||""); }); }
+
+/* ============ PIPELINE UI ============ */
+const STEPS = [
+  ["exif","Metadatos EXIF","GPS, cámara, fecha y hora de la toma"],
+  ["forense","Huella forense","SHA-256, dimensiones y peso del archivo"],
+  ["vision","Google Vision","Monumentos, logos, texto (OCR) y coincidencias web"],
+  ["bing","Bing Visual Search","Búsqueda inversa de imágenes por API"],
+  ["custom","Endpoint personalizado","IA de geolocalización externa (ej. Picarta)"],
+  ["gemini","Analista IA (Gemini)","Cruza todas las pistas y emite un veredicto"],
+  ["mapa","Mapa de candidatos","Ubica cada pista con coordenadas en el mapa"],
+];
+function renderSteps(){
+  $("steps").innerHTML = STEPS.map(([id,t,d])=>
+    `<div class="step" id="step-${id}"><div class="st">·</div><div><b>${t}</b><small>${d}</small></div></div>`).join("");
+}
+function setStep(id, state, extra){
+  const el = $("step-"+id); if(!el) return;
+  el.classList.remove("run","done","fail");
+  if(state) el.classList.add(state);
+  el.querySelector(".st").textContent = state==="done"?"✓":state==="fail"?"!":state==="run"?"…":"·";
+  if(extra) el.querySelector("small").textContent = extra;
+}
+function dot(id, cls){ const d=$(id); d.className="dot "+cls; }
+function show(id){ $(id).classList.remove("hidden"); }
+
+/* ============ ARCHIVO ============ */
+const drop=$("drop"), fi=$("fileInput");
+drop.onclick=()=>fi.click();
+["dragover","dragenter"].forEach(e=>drop.addEventListener(e,ev=>{ev.preventDefault();drop.classList.add("over");}));
+["dragleave","drop"].forEach(e=>drop.addEventListener(e,ev=>{ev.preventDefault();drop.classList.remove("over");}));
+drop.addEventListener("drop",ev=>{ const f=ev.dataTransfer.files[0]; if(f) loadFile(f); });
+fi.onchange=()=>{ if(fi.files[0]) loadFile(fi.files[0]); };
+
+async function loadFile(f){
+  if(!f.type.startsWith("image/")){ alert("Elige un archivo de imagen."); return; }
+  S.file=f; S.candidates=[]; S.exif=S.vision=S.gemini=S.bing=S.custom=null;
+  S.bytes=f.size;
+  const buf=await f.arrayBuffer();
+  const bytes=new Uint8Array(buf);
+  // dimensiones
+  const bmp=await createImageBitmap(new Blob([buf]));
+  S.w=bmp.width; S.h=bmp.height; bmp.close();
+  // base64
+  let bin=""; const CH=0x8000;
+  for(let i=0;i<bytes.length;i+=CH) bin+=String.fromCharCode.apply(null,bytes.subarray(i,i+CH));
+  S.base64=btoa(bin);
+  S.dataUrl=`data:${f.type};base64,${S.base64}`;
+  // sha256
+  const h=await crypto.subtle.digest("SHA-256",buf);
+  S.sha256=[...new Uint8Array(h)].map(b=>b.toString(16).padStart(2,"0")).join("");
+  $("imgPrev").src=S.dataUrl;
+  $("fileMeta").innerHTML=
+    `<span>Nombre</span><b>${esc(f.name)}</b>`+
+    `<span>Tamaño</span><b>${(f.size/1024).toFixed(1)} KB</b>`+
+    `<span>Dimensiones</span><b>${S.w} × ${S.h} px</b>`+
+    `<span>SHA-256</span><b style="font-size:11px">${S.sha256.slice(0,32)}…</b>`;
+  $("drop").style.display="none"; $("preview").style.display="flex";
+  ["pipeCard","verdictCard","mapCard","exifCard","visionCard","clueCard","reportCard"].forEach(id=>$(id).classList.add("hidden"));
+}
+$("btnReset").onclick=()=>{ fi.value=""; $("drop").style.display="block"; $("preview").style.display="none"; };
+
+/* ============ INVESTIGACIÓN ============ */
+$("btnRun").onclick=async()=>{
+  show("pipeCard"); renderSteps(); dot("pipeDot","");
+  ["verdictCard","mapCard","exifCard","visionCard","clueCard","reportCard"].forEach(id=>$(id).classList.add("hidden"));
+  const K=getKeys();
+
+  // 1. EXIF
+  setStep("exif","run");
+  try{
+    const ex=await exifr.parse(S.file,{tiff:true,exif:true,gps:true,iptc:true,xmp:true,icc:false});
+    S.exif=ex||{};
+    try{ const g=await exifr.gps(S.file); if(g&&g.latitude) S.gps=g; }catch{}
+    const rows=[];
+    const pick=(o,ks)=>{ for(const k of ks){ if(o&&o[k]!==undefined&&o[k]!=="") return o[k]; } return null; };
+    const dt=pick(S.exif,["DateTimeOriginal","CreateDate","ModifyDate"]);
+    if(S.gps){ rows.push(["GPS","<b style='color:#4ade80'>"+S.gps.latitude.toFixed(6)+", "+S.gps.longitude.toFixed(6)+"</b>"]);
+      addCandidate(S.gps.latitude,S.gps.longitude,"GPS del EXIF","exif",95); }
+    if(dt) rows.push(["Fecha de toma",String(dt)]);
+    const mk=pick(S.exif,["Make"]), mo=pick(S.exif,["Model"]);
+    if(mk||mo) rows.push(["Cámara",(mk||"")+" "+(mo||"")]);
+    const sw=pick(S.exif,["Software"]); if(sw) rows.push(["Software",sw]);
+    const iso=pick(S.exif,["ISO"]); if(iso) rows.push(["ISO",iso]);
+    // sol (si hay fecha)
+    if(dt){ try{ const d=new Date(dt); if(!isNaN(d)){
+      const lat=S.gps?S.gps.latitude:18.2, lng=S.gps?S.gps.longitude:-66.4;
+      const sp=SunCalc.getPosition(d,lat,lng);
+      const alt=(sp.altitude*180/Math.PI).toFixed(1);
+      rows.push(["Sol (altura aprox.)",alt+"° "+(alt>0?"de día":"de noche")]);
+    }}catch{} }
+    const n=Object.keys(S.exif).length;
+    rows.push(["Campos EXIF totales",n]);
+    $("exifBody").innerHTML=rows.length?rows.map(r=>`<dt>${r[0]}</dt><dd>${r[1]}</dd>`).join(""):"<p class='sub'>Sin metadatos EXIF (común en fotos de redes sociales).</p>";
+    show("exifCard"); dot("exifDot", S.gps?"ok":"warn");
+    setStep("exif","done", S.gps?"GPS encontrado en EXIF":n+" campos, sin GPS");
+  }catch(e){ setStep("exif","fail","No se pudo leer EXIF"); $("exifBody").innerHTML="<p class='sub'>Sin metadatos.</p>"; show("exifCard"); }
+
+  // 2. Forense
+  setStep("forense","run");
+  await new Promise(r=>setTimeout(r,300));
+  setStep("forense","done",`SHA-256 ${S.sha256.slice(0,12)}…`);
+
+  // 3. Vision
+  if(K.vision){
+    setStep("vision","run");
+    try{
+      const r=await fetch("https://vision.googleapis.com/v1/images:annotate?key="+encodeURIComponent(K.vision),{
+        method:"POST",headers:{"Content-Type":"application/json"},
+        body:JSON.stringify({requests:[{image:{content:S.base64},features:[
+          {type:"LANDMARK_DETECTION",maxResults:5},{type:"LOGO_DETECTION",maxResults:5},
+          {type:"TEXT_DETECTION"},{type:"WEB_DETECTION",maxResults:10},
+          {type:"LABEL_DETECTION",maxResults:10},{type:"IMAGE_PROPERTIES"}]}]})});
+      const j=await r.json();
+      if(j.error) throw new Error(j.error.message);
+      S.vision=j.responses[0]||{};
+      renderVision(); show("visionCard"); dot("visionDot","ok");
+      setStep("vision","done","Análisis completo");
+    }catch(e){ setStep("vision","fail",String(e.message||e).slice(0,80)); }
+  } else setStep("vision","", "Sin API key — configúrala");
+
+  // 4. Bing
+  if(K.bing){
+    setStep("bing","run");
+    try{
+      const fd=new FormData();
+      const blob=await (await fetch(S.dataUrl)).blob();
+      fd.append("image",blob,"foto.jpg");
+      const r=await fetch("https://api.bing.microsoft.com/v7.0/images/visualsearch",{
+        method:"POST",headers:{"Ocp-Apim-Subscription-Key":K.bing},body:fd});
+      const j=await r.json();
+      if(j.error) throw new Error(j.error.message);
+      S.bing=j; renderBing();
+      setStep("bing","done","Búsqueda inversa completa");
+    }catch(e){ setStep("bing","fail",String(e.message||e).slice(0,80)); }
+  } else setStep("bing","","Sin API key — configúrala");
+
+  // 5. Custom
+  if(K.custom_url){
+    setStep("custom","run");
+    try{
+      const [hn,hv]=(K.custom_h||"").split(/:(.*)/).map(s=>s&&s.trim());
+      const headers={"Content-Type":"application/json"};
+      if(hn&&hv) headers[hn]=hv;
+      const r=await fetch(K.custom_url,{method:"POST",headers,body:JSON.stringify({image:S.dataUrl})});
+      S.custom=await r.json();
+      // intenta extraer coordenadas de respuestas tipo Picarta
+      const txt=JSON.stringify(S.custom);
+      const m=txt.match(/"lat(?:itude)?"\s*:\s*(-?\d+\.?\d*).*?"l(?:on|ng)(?:gitude)?"\s*:\s*(-?\d+\.?\d*)/i);
+      if(m) addCandidate(parseFloat(m[1]),parseFloat(m[2]),"Endpoint personalizado","custom",70);
+      setStep("custom","done","Respuesta recibida");
+    }catch(e){ setStep("custom","fail",String(e.message||e).slice(0,80)); }
+  } else setStep("custom","","Sin endpoint configurado");
+
+  // 6. Gemini analista
+  if(K.gemini){
+    setStep("gemini","run");
+    try{
+      S.gemini=await geminiAnalyze(K);
+      renderVerdict(); show("verdictCard"); dot("verdictDot","ok");
+      setStep("gemini","done","Veredicto emitido");
+    }catch(e){ setStep("gemini","fail",String(e.message||e).slice(0,80)); }
+  } else setStep("gemini","","Sin API key — configúrala");
+
+  // 7. Mapa
+  setStep("mapa","run");
+  renderMap(); renderClues(); renderReport();
+  show("mapCard"); show("clueCard"); show("reportCard");
+  dot("mapDot",S.candidates.length?"ok":"warn"); dot("clueDot","ok"); dot("pipeDot","ok");
+  setStep("mapa","done",S.candidates.length+" ubicaciones candidatas");
+};
+
+function addCandidate(lat,lng,label,source,conf){
+  if(!isFinite(lat)||!isFinite(lng)||Math.abs(lat)>90||Math.abs(lng)>180) return;
+  if(S.candidates.some(c=>Math.abs(c.lat-lat)<0.001&&Math.abs(c.lng-lng)<0.001)) return;
+  S.candidates.push({lat,lng,label,source,conf});
+}
+
+/* ============ RENDER: VISION ============ */
+function renderVision(){
+  const v=S.vision, h=[];
+  (v.landmarkAnnotations||[]).forEach(l=>{
+    h.push(`<span class="tag g">Monumento: ${esc(l.description)}</span>`);
+    (l.locations||[]).forEach(loc=>{ if(loc.latLng) addCandidate(loc.latLng.latitude,loc.latLng.longitude,l.description,"vision",85); });
+  });
+  (v.logoAnnotations||[]).forEach(l=>h.push(`<span class="tag">Logo: ${esc(l.description)}</span>`));
+  (v.labelAnnotations||[]).slice(0,8).forEach(l=>h.push(`<span class="tag">${esc(l.description)}</span>`));
+  const txt=(v.fullTextAnnotation||{}).text;
+  if(txt) h.push(`<div class="clue"><b>Texto detectado (OCR):</b><br><span class="mono" style="font-size:12px">${esc(txt.slice(0,500))}</span></div>`);
+  const web=v.webDetection||{};
+  (web.webEntities||[]).slice(0,6).forEach(e=>{ if(e.description) h.push(`<span class="tag a">Web: ${esc(e.description)}</span>`); });
+  (web.pagesWithMatchingImages||[]).slice(0,5).forEach(p=>{
+    h.push(`<div class="clue">Coincidencia web: <a href="${esc(p.url)}" target="_blank" style="color:#60a5fa">${esc(p.url.slice(0,70))}</a></div>`);
+  });
+  (web.fullMatchingImages||[]).slice(0,3).forEach(im=>{
+    h.push(`<div class="clue">Imagen idéntica en: <a href="${esc(im.url)}" target="_blank" style="color:#60a5fa">${esc(im.url.slice(0,70))}</a></div>`);
+  });
+  $("visionBody").innerHTML=h.length?h.join(""):"<p class='sub'>Sin hallazgos relevantes.</p>";
+}
+function renderBing(){
+  const tags=((S.bing||{}).tags||[]), h=[];
+  tags.slice(0,3).forEach(t=>{(t.actions||[]).forEach(a=>{
+    const imgs=(a.data&&a.data.value)||[];
+    imgs.slice(0,4).forEach(im=>{
+      h.push(`<div class="clue">${esc(a.actionType||"Resultado")}: <a href="${esc(im.hostPageUrl||im.contentUrl)}" target="_blank" style="color:#60a5fa">${esc((im.name||im.hostPageUrl||"").slice(0,70))}</a></div>`);
+    });
+  });});
+  if(h.length) $("visionBody").innerHTML+=`<h2 style="margin-top:14px;font-size:14px">Bing Visual Search</h2>`+h.join("");
+}
+
+/* ============ GEMINI ANALISTA ============ */
+async function geminiAnalyze(K){
+  const clues=[];
+  if(S.gps) clues.push(`EXIF GPS: ${S.gps.latitude}, ${S.gps.longitude}`);
+  if(S.exif){ const d=S.exif.DateTimeOriginal||S.exif.CreateDate; if(d) clues.push(`Fecha de toma: ${d}`);
+    if(S.exif.Make||S.exif.Model) clues.push(`Cámara: ${S.exif.Make||""} ${S.exif.Model||""}`); }
+  if(S.vision){
+    (S.vision.landmarkAnnotations||[]).forEach(l=>clues.push(`Monumento: ${l.description}`));
+    (S.vision.logoAnnotations||[]).forEach(l=>clues.push(`Logo: ${l.description}`));
+    const t=(S.vision.fullTextAnnotation||{}).text; if(t) clues.push(`Texto en imagen: ${t.slice(0,300)}`);
+    (S.vision.labelAnnotations||[]).slice(0,6).forEach(l=>clues.push(`Etiqueta: ${l.description}`));
+    ((S.vision.webDetection||{}).webEntities||[]).slice(0,5).forEach(e=>{ if(e.description) clues.push(`Entidad web: ${e.description}`); });
+  }
+  const prompt=`Eres un analista forense OSINT. Con las pistas de esta foto, determina dónde fue tomada.
+Pistas: ${clues.join(" | ")||"sin pistas de metadatos"}
+Responde SOLO JSON válido: {"pais":"","ciudad":"","lugar":"","confianza":0-100,"lat":null,"lng":null,"razonamiento":"","pistas_clave":["..."],"advertencia":""}
+Si no puedes determinar el lugar, confianza baja y lat/lng null. Sé honesto, no inventes.`;
+  const model=K.model||"gemini-2.0-flash";
+  const r=await fetch(`https://generativelanguage.googleapis.com/v1beta/models/${encodeURIComponent(model)}:generateContent?key=${encodeURIComponent(K.gemini)}`,{
+    method:"POST",headers:{"Content-Type":"application/json"},
+    body:JSON.stringify({contents:[{parts:[{text:prompt},{inline_data:{mime_type:S.file.type,data:S.base64}}]}]}),
+      generationConfig:{response_mime_type:"application/json",temperature:0.2}});
+  const j=await r.json();
+  if(j.error) throw new Error(j.error.message);
+  let txt=j.candidates?.[0]?.content?.parts?.[0]?.text||"{}";
+  txt=txt.replace(/```json?|```/g,"").trim();
+  const out=JSON.parse(txt);
+  if(out.lat&&out.lng) addCandidate(out.lat,out.lng,(out.lugar||"Veredicto IA"),"gemini",out.confianza||50);
+  return out;
+}
+function renderVerdict(){
+  const g=S.gemini, c=Math.min(100,Math.max(0,g.confianza||0));
+  $("verdictBody").innerHTML=
+    `<div class="verdict"><b>${esc(g.lugar||"Lugar no determinado")}</b><br>`+
+    `${esc(g.ciudad||"")}${g.ciudad&&g.pais?", ":""}${esc(g.pais||"")}`+
+    `<div class="confbar"><i style="width:${c}%"></i></div>`+
+    `<small class="mono" style="color:#8b94a7">confianza: ${c}%</small></div>`+
+    (g.razonamiento?`<p style="margin-top:10px;font-size:13.5px;line-height:1.6">${esc(g.razonamiento)}</p>`:"")+
+    (g.pistas_clave&&g.pistas_clave.length?`<div style="margin-top:8px">${g.pistas_clave.map(p=>`<span class="tag g">${esc(p)}</span>`).join("")}</div>`:"")+
+    (g.advertencia?`<p class="sub" style="margin-top:8px">⚠ ${esc(g.advertencia)}</p>`:"");
+}
+
+/* ============ MAPA / PISTAS / REPORTE ============ */
+let map=null;
+function renderMap(){
+  if(map){ map.remove(); map=null; }
+  $("map").innerHTML="";
+  map=L.map("map").setView([20,-40],2);
+  L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png",{attribution:"© OpenStreetMap"}).addTo(map);
+  const colors={exif:"green",vision:"blue",gemini:"orange",custom:"purple",bing:"red"};
+  S.candidates.forEach(c=>{
+    L.circleMarker([c.lat,c.lng],{radius:9,color:colors[c.source]||"gray",fillOpacity:.8})
+      .addTo(map).bindPopup(`<b>${esc(c.label)}</b><br>Fuente: ${c.source}<br>Confianza: ${c.conf}%`);
+  });
+  if(S.candidates.length) map.fitBounds(S.candidates.map(c=>[c.lat,c.lng]),{padding:[40,40]});
+  $("candList").innerHTML=S.candidates.length
+    ? S.candidates.map(c=>`<span class="tag ${c.source==="exif"?"g":""}">${esc(c.label)} · ${c.conf}%</span>`).join("")
+    : "<p class='sub'>Sin coordenadas. Agrega APIs o revisa las pistas manuales.</p>";
+}
+function renderClues(){
+  const c=[];
+  if(S.gps) c.push(`<b>GPS EXIF:</b> <span class="mono">${S.gps.latitude.toFixed(6)}, ${S.gps.longitude.toFixed(6)}</span> — la pista más fuerte.`);
+  (S.vision?.landmarkAnnotations||[]).forEach(l=>c.push(`<b>Monumento:</b> ${esc(l.description)}`));
+  (S.vision?.logoAnnotations||[]).forEach(l=>c.push(`<b>Logo visible:</b> ${esc(l.description)} — busca dónde opera esa marca.`));
+  const t=(S.vision?.fullTextAnnotation||{}).text;
+  if(t) c.push(`<b>Texto en la foto:</b> <span class="mono">${esc(t.slice(0,200))}</span> — idiomas y nombres propios delatan el país.`);
+  ((S.vision?.webDetection||{}).pagesWithMatchingImages||[]).slice(0,3).forEach(p=>c.push(`<b>La foto existe en:</b> ${esc(p.url.slice(0,80))}`));
+  if(S.gemini?.pistas_clave) S.gemini.pistas_clave.forEach(p=>c.push(`<b>IA:</b> ${esc(p)}`));
+  if(S.exif?.DateTimeOriginal) c.push(`<b>Fecha:</b> ${esc(String(S.exif.DateTimeOriginal))} — verifica clima/eventos de ese día.`);
+  c.push(`<b>Archivo:</b> ${S.w}×${S.h}px, ${(S.bytes/1024).toFixed(0)}KB, SHA-256 <span class="mono" style="font-size:11px">${S.sha256.slice(0,24)}…</span>`);
+  $("clueBody").innerHTML=c.map(x=>`<div class="clue">${x}</div>`).join("");
+}
+function renderReport(){
+  const L_=[];
+  L_.push(`# Reporte OSINT — FotoRastro`,`Fecha: ${new Date().toLocaleString("es")}`,"",
+    `## Archivo`,`- Dimensiones: ${S.w}×${S.h}px`,`- Tamaño: ${(S.bytes/1024).toFixed(1)} KB`,`- SHA-256: ${S.sha256}`,"",
+    `## Ubicaciones candidatas`);
+  S.candidates.forEach(c=>L_.push(`- ${c.label} — ${c.lat.toFixed(5)}, ${c.lng.toFixed(5)} (fuente: ${c.source}, confianza ${c.conf}%)`));
+  if(!S.candidates.length) L_.push("- Ninguna con coordenadas.");
+  L_.push("",`## EXIF`);
+  if(S.gps) L_.push(`- GPS: ${S.gps.latitude}, ${S.gps.longitude}`);
+  if(S.exif){ ["DateTimeOriginal","Make","Model","Software"].forEach(k=>{ if(S.exif[k]) L_.push(`- ${k}: ${S.exif[k]}`); }); }
+  L_.push("",`## Google Vision`);
+  (S.vision?.landmarkAnnotations||[]).forEach(l=>L_.push(`- Monumento: ${l.description}`));
+  (S.vision?.logoAnnotations||[]).forEach(l=>L_.push(`- Logo: ${l.description}`));
+  const t=(S.vision?.fullTextAnnotation||{}).text; if(t) L_.push(`- OCR: ${t.slice(0,300)}`);
+  L_.push("",`## Veredicto IA`);
+  if(S.gemini) L_.push(`- ${S.gemini.lugar||"?"} — ${S.gemini.ciudad||""} ${S.gemini.pais||""} (confianza ${S.gemini.confianza||"?"}%)`,`- ${S.gemini.razonamiento||""}`);
+  else L_.push("- No generado (sin API key de Gemini).");
+  L_.push("",`> Verificar siempre con múltiples fuentes antes de concluir.`);
+  $("report").value=L_.join("\n");
+}
+$("btnCopy").onclick=()=>{ $("report").select(); document.execCommand("copy"); $("btnCopy").textContent="Copiado ✓"; setTimeout(()=>$("btnCopy").textContent="Copiar reporte",1500); };
+$("btnDl").onclick=()=>{ const a=document.createElement("a"); a.href=URL.createObjectURL(new Blob([$("report").value],{type:"text/markdown"})); a.download="fotorastro-reporte.md"; a.click(); };
+document.querySelectorAll("[data-ext]").forEach(b=>b.onclick=()=>window.open(b.dataset.ext,"_blank"));
+
+/* ============ MODAL KEYS ============ */
+$("btnKeys").onclick=()=>{ loadKeysUI(); $("keysModal").classList.add("open"); };
+$("btnCloseKeys").onclick=()=>$("keysModal").classList.remove("open");
+$("btnSaveKeys").onclick=()=>{ saveKeys({vision:$("k_vision").value.trim(),gemini:$("k_gemini").value.trim(),model:$("k_model").value.trim()||"gemini-2.0-flash",bing:$("k_bing").value.trim(),custom_url:$("k_custom_url").value.trim(),custom_h:$("k_custom_h").value.trim()}); $("keysModal").classList.remove("open"); };
+$("keysModal").addEventListener("click",e=>{ if(e.target===$("keysModal")) $("keysModal").classList.remove("open"); });
+loadKeysUI();
+</script>
+</body>
+</html>
